@@ -1,14 +1,12 @@
-import { Box, Button, Flex, Heading, IconButton, Input, InputGroup, InputRightElement, Spinner, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, IconButton, Input, InputGroup, InputRightElement, Spinner, Text } from '@chakra-ui/react';
 import { useState } from 'react';
-import { BiHotel, BiMapAlt, BiRestaurant, BiSearch } from 'react-icons/bi';
+import { BiCurrentLocation, BiSearch } from 'react-icons/bi';
+import ColorModeToggle from './ColorModeToggle';
+import { CATEGORY_META, CategoryIcon, Logo } from './icons';
 
-const TYPES = [
-  { id: 'restaurants', label: 'Restaurants', icon: BiRestaurant },
-  { id: 'hotels', label: 'Hotels', icon: BiHotel },
-  { id: 'attractions', label: 'Attractions', icon: BiMapAlt },
-];
+const TYPES = ['restaurants', 'hotels', 'attractions'];
 
-export default function Header({ type, setType, onPick }) {
+export default function Header({ type, setType, onPick, onLocate, locating, floating }) {
   const [q, setQ] = useState('');
   const [results, setResults] = useState(null); // null: closed
   const [busy, setBusy] = useState(false);
@@ -37,57 +35,91 @@ export default function Header({ type, setType, onPick }) {
     onPick(r);
   }
 
-  return (
-    <Flex
-      as="header" bg="white" borderBottomWidth="1px" borderColor="gray.200" px={4} py={3} gap={3}
-      direction={{ base: 'column', lg: 'row' }} align={{ lg: 'center' }} zIndex={1100} position="relative"
-    >
-      <Heading size="md" color="blue.700" whiteSpace="nowrap">Places nearby</Heading>
-
-      <Box position="relative" flex={{ lg: '0 1 420px' }} width={{ base: 'full', lg: 'auto' }}>
-        <form onSubmit={search} role="search">
-          <InputGroup>
-            <Input
-              value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a place, e.g. Lugogo Mall"
-              aria-label="Search a place" bg="gray.50"
-            />
-            <InputRightElement>
-              {busy ? <Spinner size="sm" /> : (
-                <IconButton type="submit" aria-label="Search" icon={<BiSearch />} size="sm" variant="ghost" />
-              )}
-            </InputRightElement>
-          </InputGroup>
-        </form>
-        {error && <Text fontSize="sm" color="red.600" mt={1}>{error}</Text>}
-        {results && results.length > 0 && (
-          <Box
-            position="absolute" top="44px" left={0} right={0} bg="white" shadow="lg" rounded="md"
-            borderWidth="1px" borderColor="gray.200" overflow="hidden" zIndex={1200}
-          >
-            {results.map((r, i) => (
-              <Box
-                key={i} as="button" type="button" textAlign="left" width="full" px={3} py={2} fontSize="sm"
-                _hover={{ bg: 'blue.50' }} onClick={() => pick(r)}
-                borderTopWidth={i ? '1px' : 0} borderColor="gray.100"
-              >
-                {r.name}
-              </Box>
-            ))}
-          </Box>
-        )}
-      </Box>
-
-      <Flex gap={2} overflowX="auto" role="tablist" aria-label="Category">
-        {TYPES.map(({ id, label, icon: Icon }) => (
+  const chips = (
+    <Flex gap={2} overflowX="auto" role="tablist" aria-label="Category" py={1} sx={{ scrollbarWidth: 'none' }}>
+      {TYPES.map((id) => {
+        const active = type === id;
+        return (
           <Button
-            key={id} role="tab" aria-selected={type === id} onClick={() => setType(id)} leftIcon={<Icon />}
-            rounded="full" size="sm" flexShrink={0}
-            colorScheme={type === id ? 'blue' : 'gray'} variant={type === id ? 'solid' : 'outline'}
+            key={id} role="tab" aria-selected={active} onClick={() => setType(id)}
+            leftIcon={<CategoryIcon category={id} size={18} />} size="sm" flexShrink={0}
+            variant={active ? 'solid' : 'outline'} bg={active ? undefined : 'surface'} borderColor="line"
+            shadow={floating ? 'card' : 'none'} _hover={active ? undefined : { bg: 'subtle' }}
           >
-            {label}
+            {CATEGORY_META[id].label}
           </Button>
-        ))}
-      </Flex>
+        );
+      })}
     </Flex>
+  );
+
+  return (
+    <Box
+      as="header"
+      position={floating ? 'absolute' : 'relative'} top={0} left={0} right={0} zIndex={1100}
+      bg={floating ? 'transparent' : 'surface'} borderBottomWidth={floating ? 0 : '1px'} borderColor="line"
+      px={{ base: 3, md: 5 }} py={floating ? 3 : 3}
+      pointerEvents={floating ? 'none' : 'auto'}
+    >
+      <Flex direction={{ base: 'column', lg: floating ? 'column' : 'row' }} gap={3} align={{ lg: floating ? 'stretch' : 'center' }}>
+        <Flex align="center" gap={2} pointerEvents="auto" display={floating ? 'none' : 'flex'}>
+          <Logo />
+          <Text fontWeight={800} fontSize="lg" letterSpacing="-0.02em" whiteSpace="nowrap">Places nearby</Text>
+        </Flex>
+
+        <Box position="relative" flex={{ lg: '0 1 460px' }} pointerEvents="auto">
+          <form onSubmit={search} role="search">
+            <InputGroup size="lg">
+              <Input
+                value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a place, e.g. Lugogo Mall"
+                aria-label="Search a place" bg="surface" rounded="pill" borderColor="line"
+                shadow={floating ? 'lift' : 'none'} pl={5} fontSize="md"
+              />
+              <InputRightElement width="3.2rem">
+                {busy ? <Spinner size="sm" color="primary" /> : (
+                  <IconButton type="submit" aria-label="Search" icon={<BiSearch size={20} />} size="sm" variant="ghost" rounded="full" />
+                )}
+              </InputRightElement>
+            </InputGroup>
+          </form>
+          {error && (
+            <Text fontSize="sm" color="red.600" _dark={{ color: 'red.300' }} bg="surface" rounded="md" px={3} py={1} mt={1} display="inline-block" shadow="card">
+              {error}
+            </Text>
+          )}
+          {results && results.length > 0 && (
+            <Box
+              position="absolute" top="56px" left={0} right={0} bg="surface" shadow="lift" rounded="xl"
+              borderWidth="1px" borderColor="line" overflow="hidden" zIndex={1200} role="listbox"
+            >
+              {results.map((r, i) => (
+                <Box
+                  key={i} as="button" type="button" role="option" textAlign="start" width="full" px={4} py={3} fontSize="sm"
+                  _hover={{ bg: 'subtle' }} onClick={() => pick(r)} borderTopWidth={i ? '1px' : 0} borderColor="line"
+                >
+                  {r.name}
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+
+        <Flex gap={2} align="center" pointerEvents="auto" flex={{ lg: 1 }} overflow="hidden">
+          <Box flex={1} minW={0}>{chips}</Box>
+          {!floating && (
+            <>
+              <Button
+                onClick={onLocate} isLoading={locating} leftIcon={<BiCurrentLocation size={18} />} size="sm"
+                variant="outline" borderColor="line" flexShrink={0}
+              >
+                Use my location
+              </Button>
+              <ColorModeToggle size="sm" />
+            </>
+          )}
+          {floating && <ColorModeToggle size="sm" bg="surface" shadow="card" flexShrink={0} />}
+        </Flex>
+      </Flex>
+    </Box>
   );
 }

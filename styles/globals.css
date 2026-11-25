@@ -1,0 +1,22 @@
+html, body, #__next { height: 100%; }
+body { margin: 0; -webkit-font-smoothing: antialiased; }
+
+/* Leaflet polish */
+.leaflet-container { font-family: inherit; background: #e8eef0; }
+.leaflet-tooltip { border-radius: 8px; border: none; box-shadow: 0 4px 14px rgba(16, 24, 40, .2); font-weight: 600; }
+.leaflet-control-zoom a { border-radius: 10px !important; }
+
+/* Dark mode: darken the raster tiles (markers and controls stay normal) */
+.map-dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.95) contrast(.9); }
+.map-dark.leaflet-container { background: #1a202c; }
+
+/* Cluster bubbles */
+.cluster-icon {
+  display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 14px;
+  background: #0f766e; border: 3px solid rgba(255, 255, 255, .9); border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(16, 24, 40, .3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

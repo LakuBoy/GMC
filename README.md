@@ -22,6 +22,15 @@ Needs Node 20.9 or newer. `npm run build` then `npm start` for production.
   then returns at most about 40 places). Results are cached for 10 minutes.
 - The browser only talks to this app's own `/api` routes.
 
+## Design system
+
+- Theme tokens live in `theme/index.js` (brand teal, semantic colors for light and dark, radii, shadows). Components use tokens such as `bg="surface"` and `color="muted"`, never raw colors, so dark mode needs no per-component code.
+- Font: Plus Jakarta Sans, bundled through `@fontsource-variable` (no request to Google Fonts).
+- Phone layout: full-screen map with a draggable bottom sheet (peek, half, full). Desktop: results panel beside the map.
+- Map pins are clustered and colored by category; the chosen place is orange. Dark mode darkens the tiles.
+- Every place has a shareable page at `/place/<node|way|relation>-<osm id>`, rendered on the server for link previews.
+- The browser never asks for location on load; "Use my location" asks only when pressed.
+
 ## Notes
 
 - Public OpenStreetMap servers are for light use. For real traffic, self-host them or use a paid provider.
