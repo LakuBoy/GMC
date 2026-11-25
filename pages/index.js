@@ -7,6 +7,9 @@ import BottomSheet from '../components/BottomSheet';
 import Header from '../components/Header';
 import List from '../components/List';
 import PlaceView from '../components/PlaceView';
+import { useCurrency, useNow, useRates } from '../lib/hooks';
+import { openStatus } from '../lib/hours';
+import { parseCharge } from '../lib/money';
 
 // Leaflet needs the browser, so the map is never rendered on the server.
 const Map = dynamic(() => import('../components/Map'), {
@@ -47,6 +50,12 @@ export default function Home() {
   const [locating, setLocating] = useState(false);
   const [snap, setSnap] = useState('half');
   const [sheetPx, setSheetPx] = useState(0);
+  const [filters, setFilters] = useState({});
+  const [currency, setCurrency] = useCurrency();
+  const { rates } = useRates();
+  const now = useNow();
+  const toggleFilter = useCallback((id) => setFilters((f) => ({ ...f, [id]: !f[id] })), []);
+  const clearFilters = useCallback(() => setFilters({}), []);
 
   const locate = useCallback(() => {
     if (!navigator.geolocation) { setNotice('This browser cannot share your location.'); return; }
@@ -107,6 +116,16 @@ export default function Home() {
       .sort((a, b) => a.km - b.km);
   }, [places, bounds, view.center]);
 
+  // Add the open-now status and any price OSM knows, then apply the filter chips.
+  const decorated = useMemo(() => sorted.map((p) => ({
+    ...p, status: openStatus(p.hours, now), price: parseCharge(p.charge),
+  })), [sorted, now]);
+
+  const visible = useMemo(() => decorated.filter((p) => (
+    (!filters.open || p.status.state === 'open')
+    && ['wifi', 'wheelchair', 'takeaway', 'outdoor', 'cards'].every((k) => !filters[k] || p.features?.[k])
+  )), [decorated, filters]);
+
   const goTo = useCallback((target) => {
     setSelected(null);
     setView((v) => ({ center: [target.lat, target.lng], bbox: target.bbox || null, zoom: 15, nonce: v.nonce + 1 }));
@@ -119,18 +138,20 @@ export default function Home() {
 
   const panel = selected ? (
     <Box flex={1} minH={0} overflowY="auto">
-      <PlaceView place={selected} onBack={() => setSelected(null)} />
+      <PlaceView place={selected} onBack={() => setSelected(null)} currency={currency} rates={rates} />
     </Box>
   ) : (
     <List
-      places={sorted} status={status} notice={notice} onDismissNotice={() => setNotice(null)}
+      places={visible} total={decorated.length} status={status}
+      filters={filters} toggleFilter={toggleFilter} clearFilters={clearFilters}
+      currency={currency} setCurrency={setCurrency} rates={rates} notice={notice} onDismissNotice={() => setNotice(null)}
       selectedId={selected?.id} onSelect={select} onRetry={() => setRetry((n) => n + 1)} type={type}
     />
   );
 
   const map = (
     <Map
-      view={view} places={sorted} selected={selected} onSelect={select} onBounds={setBounds}
+      view={view} places={visible} selected={selected} onSelect={select} onBounds={setBounds}
       dark={colorMode === 'dark'} userPos={userPos} bottomPad={isMobile ? sheetPx : 0} showZoom={!isMobile}
     />
   );

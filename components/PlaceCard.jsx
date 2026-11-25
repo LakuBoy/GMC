@@ -1,9 +1,10 @@
 import { Badge, Box, Flex, Text } from '@chakra-ui/react';
-import { IoLocation, IoTimeOutline } from 'react-icons/io5';
+import { IoLocation } from 'react-icons/io5';
+import { FeatureIcons, OpenBadge, Price } from './badges';
 import { CategoryTile } from './icons';
 
-// Compact list card: what people scan. (Ratings, price and photos arrive in later phases.)
-export default function PlaceCard({ place, selected, onSelect }) {
+// Compact list card: what people scan. (Our own ratings and photos arrive in Phase C.)
+export default function PlaceCard({ place, selected, onSelect, currency, rates }) {
   const km = place.km < 1 ? `${Math.round(place.km * 1000)} m` : `${place.km.toFixed(1)} km`;
   return (
     <Box
@@ -31,12 +32,11 @@ export default function PlaceCard({ place, selected, onSelect }) {
               <Text noOfLines={1}>{place.address}</Text>
             </Flex>
           )}
-          {place.hours && (
-            <Flex align="center" gap={1.5} mt={1} color="muted" fontSize="sm" minW={0}>
-              <Box as={IoTimeOutline} flexShrink={0} />
-              <Text noOfLines={1}>{place.hours}</Text>
-            </Flex>
-          )}
+          <Flex align="center" justify="space-between" gap={2} mt={2} wrap="wrap">
+            <OpenBadge status={place.status} />
+            <FeatureIcons features={place.features} />
+          </Flex>
+          {place.price && <Box mt={1}><Price price={place.price} currency={currency} rates={rates} /></Box>}
         </Box>
       </Flex>
     </Box>

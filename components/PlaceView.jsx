@@ -1,7 +1,11 @@
 import { Badge, Box, Button, Flex, IconButton, Link, Text, useToast } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { BiArrowBack, BiCopy, BiLinkExternal, BiShareAlt } from 'react-icons/bi';
-import { IoCall, IoGlobeOutline, IoLocation, IoLogoWhatsapp, IoNavigate, IoTimeOutline } from 'react-icons/io5';
+import { IoCall, IoGlobeOutline, IoLocation, IoLogoWhatsapp, IoCheckmarkCircle, IoNavigate, IoPricetag, IoTimeOutline } from 'react-icons/io5';
+import { useEffect, useState } from 'react';
+import { openStatus } from '../lib/hours';
+import { parseCharge } from '../lib/money';
+import { FEATURES, OpenBadge, Price, RatesCredit } from './badges';
 import { CategoryIcon, metaOf } from './icons';
 
 export const slugOf = (id) => id.replace('/', '-');
@@ -26,8 +30,18 @@ function Row({ icon: Icon, label, children, action }) {
   );
 }
 
-export default function PlaceView({ place, onBack, standalone }) {
+export default function PlaceView({ place, onBack, standalone, currency = 'both', rates }) {
   const toast = useToast();
+  // Computed after mount so the server-rendered page and the browser never disagree about "now".
+  const [status, setStatus] = useState(null);
+  useEffect(() => {
+    const update = () => setStatus(openStatus(place.hours));
+    update();
+    const t = setInterval(update, 60000);
+    return () => clearInterval(t);
+  }, [place.hours]);
+  const price = parseCharge(place.charge);
+  const facts = FEATURES.filter((f) => place.features?.[f.id]);
   const m = metaOf(place.category);
   const url = typeof window !== 'undefined' ? `${window.location.origin}/place/${slugOf(place.id)}` : '';
   const wa = place.phone ? whatsappNumber(place.phone) : null;
@@ -67,7 +81,7 @@ export default function PlaceView({ place, onBack, standalone }) {
           <Box rounded="14px" bg="whiteAlpha.300" p={3} flexShrink={0}><CategoryIcon category={place.category} size={30} /></Box>
           <Box minW={0}>
             <Text as="h1" fontSize="xl" fontWeight={800} lineHeight="short" letterSpacing="-0.01em">{place.name}</Text>
-            <Flex gap={1.5} mt={2} wrap="wrap">
+            <Flex gap={1.5} mt={2} wrap="wrap" align="center">
               <Badge bg="whiteAlpha.300" color="white" textTransform="capitalize">{place.kind}</Badge>
               {place.cuisine && <Badge bg="whiteAlpha.300" color="white" textTransform="capitalize">{place.cuisine}</Badge>}
               {place.stars && <Badge bg="whiteAlpha.300" color="white">{place.stars} star</Badge>}
@@ -105,7 +119,29 @@ export default function PlaceView({ place, onBack, standalone }) {
             <IconButton aria-label="Copy address" icon={<BiCopy />} size="xs" variant="ghost" onClick={copyAddress} />
           }>{place.address}</Row>
         )}
-        {place.hours && <Row icon={IoTimeOutline} label="Opening hours">{place.hours}</Row>}
+        {place.hours && (
+          <Row icon={IoTimeOutline} label="Opening hours">
+            {status && status.state !== 'unknown' && <Box mb={1}><OpenBadge status={status} /></Box>}
+            {place.hours}
+          </Row>
+        )}
+        {price && (
+          <Row icon={IoPricetag} label="Entry price">
+            <Price price={price} currency={currency} rates={rates} size="md" />
+            <Box mt={1}><RatesCredit /></Box>
+          </Row>
+        )}
+        {facts.length > 0 && (
+          <Row icon={IoCheckmarkCircle} label="Good to know">
+            <Flex gap={2} wrap="wrap">
+              {facts.map((f) => (
+                <Badge key={f.id} variant="subtle" colorScheme="brand" textTransform="none" display="inline-flex" alignItems="center" gap={1} px={2} py={1} rounded="md">
+                  <Box as={f.icon} /> {f.label}
+                </Badge>
+              ))}
+            </Flex>
+          </Row>
+        )}
         {place.phone && <Row icon={IoCall} label="Phone"><Link href={`tel:${place.phone.replace(/[^+\d]/g, '')}`}>{place.phone}</Link></Row>}
         {place.website && (
           <Row icon={IoGlobeOutline} label="Website">

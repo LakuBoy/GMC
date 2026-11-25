@@ -8,6 +8,7 @@ import ColorModeToggle from '../../components/ColorModeToggle';
 import EmptyState from '../../components/EmptyState';
 import { Logo } from '../../components/icons';
 import PlaceView from '../../components/PlaceView';
+import { useCurrency, useRates } from '../../lib/hooks';
 import { cached, lookupPlace } from '../../lib/osm';
 
 const Map = dynamic(() => import('../../components/Map'), { ssr: false, loading: () => <Box height="full" bg="subtle" /> });
@@ -32,6 +33,8 @@ const noop = () => {};
 
 export default function PlacePage({ place }) {
   const { colorMode } = useColorMode();
+  const [currency] = useCurrency();
+  const { rates } = useRates();
   const title = place ? `${place.name} · Places nearby` : 'Place unavailable · Places nearby';
   const description = place
     ? [place.kind, place.address].filter(Boolean).join(' · ') || 'Place details from OpenStreetMap'
@@ -58,7 +61,7 @@ export default function PlacePage({ place }) {
         {place ? (
           <Flex flex={1} direction={{ base: 'column', md: 'row' }} minH={0}>
             <Box width={{ base: 'full', md: '480px' }} flexShrink={0} bg="surface" overflowY="auto">
-              <PlaceView place={place} standalone />
+              <PlaceView place={place} standalone currency={currency} rates={rates} />
             </Box>
             <Box flex={1} minH={{ base: '320px', md: 'auto' }} position="relative">
               <Map
