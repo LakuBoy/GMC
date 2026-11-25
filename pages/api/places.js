@@ -14,9 +14,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Zoom in to see places (area too large)', code: 'too_large' });
   }
 
-  // Round the box so small pans reuse the cached answer (about 1 km grid).
-  const r = (n) => Math.round(n * 100) / 100;
-  const box = [r(south), r(west), r(north), r(east)];
+  // Snap the box outward to a ~1 km grid so small pans reuse the cached answer
+  // (and a tiny box can never collapse to zero size).
+  const down = (n) => Math.floor(n * 100) / 100;
+  const up = (n) => Math.ceil(n * 100) / 100;
+  const box = [down(south), down(west), up(north), up(east)];
   try {
     const places = await cached(`p:${type}:${box}`, 10 * 60 * 1000, () => placesIn(type, box));
     res.setHeader('Cache-Control', 'private, max-age=60');
