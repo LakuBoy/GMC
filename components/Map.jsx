@@ -1,90 +1,70 @@
-import React, { useState } from 'react';
-import { Box, Text, Image } from '@chakra-ui/react';
-import GoogleMapReact from 'google-map-react';
-import {IoLocation} from 'react-icons/io5';
-import {BiX} from 'react-icons/bi';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { useEffect, useMemo } from 'react';
+import { MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 
+const pin = (color, size) => L.divIcon({
+  className: '',
+  iconSize: [size, size],
+  iconAnchor: [size / 2, size],
+  html: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="12" cy="9" r="2.6" fill="#fff"/></svg>`,
+});
+const NORMAL = pin('#2b6cb0', 30);
+const ACTIVE = pin('#e53e3e', 40);
 
-const Map = ({ coordinates, setCoordinates, setBounds, places }) => {
-  const [isCard, setIsCard] = useState(false);
-  const [cardData, setCardData] = useState(null);
-  return <Box width={'full'} height={'full'}>
-    
-      <GoogleMapReact 
-        bootstrapURLKeys={{key:'AIzaSyD7Dm7r8vA3ikGGDt2L3_iMmCkWoOxnur8' }}
-        defaultCenter={coordinates}
-        center={coordinates}
-        defaultZoom={14}
-        margin={[50, 50, 50, 50]}
-        options={''}
-        onChange={(e) => {
-          setCoordinates({lat : e.center.lat, lng : e.center.lng});
-          setBounds({ne : e.marginBounds.ne, sw : e.marginBounds.sw});
-        }}
-        onChildClick={(child) => {
-          setCardData(places[child]);
-          setIsCard(true);
-        }}
-      >
-        {places?.map((place, i) =>(
-          <Box 
-            lat={Number(place.latitude)}
-            lng={Number(place.longitude)}  
-            position={'relative'}
-            cursor='pointer'
-            >
-              <IoLocation color='red' fontSize={30} />
-            </Box>
-        ))}
+// Reports the visible area to the page whenever the map settles.
+function Reporter({ onBounds }) {
+  const map = useMap();
+  const report = () => {
+    const b = map.getBounds();
+    const c = map.getCenter();
+    onBounds({ south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast(), center: [c.lat, c.lng] });
+  };
+  useMapEvents({ moveend: report });
+  useEffect(() => { map.whenReady(report); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
 
-        {isCard && (
-          <Box 
-            width={'200px'}
-            height={'150px'}   
-            bg={'whiteAlpha.500'}
-            position={'absolute'}
-            top={-12}
-            left={0}
-            shadow={'lg'}
-            rounded={'lg'}
-          >
-             <Image 
-              objectFit={'cover'}            
-              width={'full'}
-              height={'120px'}
-              rounded='lg'
-              src={
-              cardData?.photo
-               ? cardData?.photo?.images?.large?.url 
-              : 'https://www.foodserviceandhospitality.com/wp-content/uploads/2016/09/Restaurant-Placeholder-001.jpg'
-            }
-            />
-               <Text textTransform={'capitalize'} width={'40'} fontSize={'lg'} fontWeigth={'500'} isTruncated>
-                   {cardData.name}
-               </Text>
-               <Box 
-                 cursor={'pointer'}
-                 position={'absolute'}
-                 top={2}
-                 right={2}
-                 width={'30px'}
-                 height={'30px'}
-                 bg={'red.300'}
-                 rounded={'full'}
-                 display={'flex'}
-                 justifyContent={'center'}
-                 alignItems={'center'}
-                 onClick={() =>{
-                  setIsCard(false);
-                 }}
-               >
-                <BiX fontSize={20} />
-               </Box>
+// Moves the map when the page asks (search result, location) or when a list card is chosen.
+function Mover({ view, places, selectedId }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!view.nonce) return;
+    if (view.bbox) map.flyToBounds([[view.bbox[0], view.bbox[2]], [view.bbox[1], view.bbox[3]]], { maxZoom: 16 });
+    else map.flyTo(view.center, view.zoom ?? 15);
+  }, [view.nonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
-          </Box>
-        )}
-      </GoogleMapReact>
-    </Box>;
-};
+  useEffect(() => {
+    const p = places.find((x) => x.id === selectedId);
+    if (p && !map.getBounds().pad(-0.1).contains([p.lat, p.lng])) map.panTo([p.lat, p.lng]);
+  }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
 
-export default Map
+export default function Map({ view, places, selectedId, onSelect, onBounds }) {
+  const markers = useMemo(() => places.slice(0, 120), [places]);
+  return (
+    <MapContainer center={view.center} zoom={view.zoom} style={{ height: '100%', width: '100%' }} zoomControl>
+      <TileLayer
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="&copy; OpenStreetMap contributors"
+        maxZoom={19}
+      />
+      <Reporter onBounds={onBounds} />
+      <Mover view={view} places={places} selectedId={selectedId} />
+      {markers.map((p) => (
+        <Marker
+          key={p.id}
+          position={[p.lat, p.lng]}
+          icon={p.id === selectedId ? ACTIVE : NORMAL}
+          zIndexOffset={p.id === selectedId ? 1000 : 0}
+          eventHandlers={{ click: () => onSelect(p.id) }}
+        >
+          <Tooltip direction="top" offset={[0, -28]}>{p.name}</Tooltip>
+        </Marker>
+      ))}
+    </MapContainer>
+  );
+}

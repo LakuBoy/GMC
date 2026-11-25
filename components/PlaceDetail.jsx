@@ -1,128 +1,52 @@
-import { Flex, Text, Image, Badge } from '@chakra-ui/react';
-import { Rating } from '@material-ui/lab';
-import React from 'react'; 
-import {IoLocation} from 'react-icons/io5';
+import { Badge, Box, Flex, Link, Text } from '@chakra-ui/react';
+import { IoCall, IoGlobeOutline, IoLocation, IoTimeOutline } from 'react-icons/io5';
 
-const PlaceDetail = ({ place }) => {
+const safeUrl = (u) => (/^https?:\/\//i.test(u) ? u : `https://${u}`);
+
+function Row({ icon: Icon, children }) {
   return (
-   <Flex
-            bg={'whiteAlpha.900'}    
-            px={4} 
-            py={2}
-            mb={2}
-            shadow='lg'
-            direction={'column'}
-            alignItems={'start'}
-            justifyContent='space-between'
-  
-        >
-          <Flex justifyContent={'space-between'} width='full'>
-            <Flex
-              direction={'column'}
-              justifyContent={'start'}
-              alignItems={'start'}
-              width='full'
-              px={2}
-            >
-              <Flex
-                alignItems={'center'}
-                width={'full'}
-                justifyContent={'space-between'}
-              >
-                <Text textTransform={'capitalize'} fontSize={'lg'} width={'40'}
-                  fontWeight={500}
-                  isTruncated
-                >{place.name}
-                </Text>
-
-                <Text fontSize={'sm'} fontWeight={'500'} color={'gray.500'}>
-                    {place.price}
-                </Text>
-              </Flex>
-              {/* Ratings */}
-              <Flex alignItems={'center'} width={'full'}>
-                <Rating size='small' value={Number(place.rating)} readOnly />
-                <Text 
-                  fontSize={'sm'}  
-                  fontWeight={'500'} 
-                  color={'gray.500'}
-                >{`(${place.num_reviews})`}
-                </Text>
-
-                <Text 
-                  fontSize={'sm'}  
-                  fontWeight={'500'} 
-                  color={'gray.500'} 
-                  ml={'auto'}
-                  >
-                    {place.price_level}
-                </Text>
-              </Flex> 
-
-              {/* Ranking */}
-              <Text
-                fontSize={'sm'}  
-                fontWeight={'500'} 
-                color={'gray.400'}>
-                  {place.ranking}
-              </Text>
-
-              {/* Open status */}
-              <Text
-                fontSize={'sm'}  
-                fontWeight={'500'} 
-                color={'gray.600'}>
-                {place.open_now_text}
-              </Text>
-
-              {/* dietary_restrictions */}
-              {
-                place?.dietary_restrictions && (
-                  <Flex width={'full'} flexWrap={'wrap'}>
-                    {
-                      place.dietary_restrictions.map((n, i) => (
-                          <Badge 
-                            colorScheme={'blue'} 
-                            cursor={'pointer'} 
-                            key={i} m={1} 
-                            fontSize={10}
-                          >
-                              {n.name}
-                          </Badge>
-                      ))
-                    }
-                  </Flex>
-                )
-              }
-            </Flex>
-            <Image 
-              objectFit={'cover'}            
-              width={'120px'}
-              height={'120px'}
-              rounded='lg'
-              src={
-              place.photo ? place.photo.images.large.url : 'https://www.foodserviceandhospitality.com/wp-content/uploads/2016/09/Restaurant-Placeholder-001.jpg'
-            }
-          />
-          </Flex>
-
-          {
-            place?.address && (
-              <Flex alignItems={'center'} width={'full'} px={1} my={2}>
-                  <IoLocation fontSize={20} color='gray' />
-                  <Text
-                    isTruncated
-                    fontSize={'small'}
-                    fontWeight={500}
-                    color={'gray.700'}
-                    ml={1}
-                  >
-                    {place.address}
-                  </Text>
-              </Flex>
-            )
-          }
-       </Flex>
+    <Flex align="flex-start" gap={2} color="gray.600" fontSize="sm">
+      <Box as={Icon} mt="3px" flexShrink={0} />
+      <Box minW={0}>{children}</Box>
+    </Flex>
   );
-};
-export default PlaceDetail;
+}
+
+export default function PlaceDetail({ place, selected, onSelect }) {
+  const km = place.km < 1 ? `${Math.round(place.km * 1000)} m` : `${place.km.toFixed(1)} km`;
+  return (
+    <Box
+      as="article" role="button" tabIndex={0} onClick={onSelect}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } }}
+      p={4} rounded="lg" borderWidth="2px" cursor="pointer" bg="white"
+      borderColor={selected ? 'red.400' : 'gray.200'} shadow={selected ? 'md' : 'none'}
+      _hover={{ borderColor: selected ? 'red.400' : 'blue.300' }} transition="all 0.15s"
+    >
+      <Flex justify="space-between" gap={3} align="flex-start">
+        <Text fontWeight={600} fontSize="lg" lineHeight="short">{place.name}</Text>
+        <Text fontSize="sm" color="gray.500" whiteSpace="nowrap">{km}</Text>
+      </Flex>
+      <Flex gap={2} mt={1} mb={2} wrap="wrap">
+        <Badge colorScheme="blue" textTransform="capitalize">{place.kind}</Badge>
+        {place.cuisine && <Badge colorScheme="orange" textTransform="capitalize">{place.cuisine}</Badge>}
+        {place.stars && <Badge colorScheme="yellow">{place.stars} star</Badge>}
+      </Flex>
+      <Flex direction="column" gap={1}>
+        {place.address && <Row icon={IoLocation}>{place.address}</Row>}
+        {place.hours && <Row icon={IoTimeOutline}>{place.hours}</Row>}
+        {place.phone && (
+          <Row icon={IoCall}>
+            <Link href={`tel:${place.phone.replace(/[^+\d]/g, '')}`} onClick={(e) => e.stopPropagation()}>{place.phone}</Link>
+          </Row>
+        )}
+        {place.website && (
+          <Row icon={IoGlobeOutline}>
+            <Link href={safeUrl(place.website)} isExternal rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+              {place.website.replace(/^https?:\/\//i, '').replace(/\/$/, '')}
+            </Link>
+          </Row>
+        )}
+      </Flex>
+    </Box>
+  );
+}
