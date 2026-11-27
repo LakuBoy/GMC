@@ -1,6 +1,7 @@
 import { Box, Button, Flex, IconButton, Input, InputGroup, InputRightElement, Spinner, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { BiCurrentLocation, BiSearch } from 'react-icons/bi';
+import AccountMenu from './AccountMenu';
 import ColorModeToggle from './ColorModeToggle';
 import { CATEGORY_META, CategoryIcon, Logo } from './icons';
 
@@ -67,42 +68,50 @@ export default function Header({ type, setType, onPick, onLocate, locating, floa
           <Text fontWeight={800} fontSize="lg" letterSpacing="-0.02em" whiteSpace="nowrap">Places nearby</Text>
         </Flex>
 
-        <Box position="relative" flex={{ lg: '0 1 460px' }} pointerEvents="auto">
-          <form onSubmit={search} role="search">
-            <InputGroup size="lg">
-              <Input
-                value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a place, e.g. Lugogo Mall"
-                aria-label="Search a place" bg="surface" rounded="pill" borderColor="line"
-                shadow={floating ? 'lift' : 'none'} pl={5} fontSize="md"
-              />
-              <InputRightElement width="3.2rem">
-                {busy ? <Spinner size="sm" color="primary" /> : (
-                  <IconButton type="submit" aria-label="Search" icon={<BiSearch size={20} />} size="sm" variant="ghost" rounded="full" />
-                )}
-              </InputRightElement>
-            </InputGroup>
-          </form>
-          {error && (
-            <Text fontSize="sm" color="red.600" _dark={{ color: 'red.300' }} bg="surface" rounded="md" px={3} py={1} mt={1} display="inline-block" shadow="card">
-              {error}
-            </Text>
+        <Flex gap={2} align="center" flex={{ lg: floating ? undefined : '0 1 460px' }}>
+          <Box position="relative" flex={1} minW={0} pointerEvents="auto">
+            <form onSubmit={search} role="search">
+              <InputGroup size="lg">
+                <Input
+                  value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a place, e.g. Lugogo Mall"
+                  aria-label="Search a place" bg="surface" rounded="pill" borderColor="line"
+                  shadow={floating ? 'lift' : 'none'} pl={5} fontSize="md"
+                />
+                <InputRightElement width="3.2rem">
+                  {busy ? <Spinner size="sm" color="primary" /> : (
+                    <IconButton type="submit" aria-label="Search" icon={<BiSearch size={20} />} size="sm" variant="ghost" rounded="full" />
+                  )}
+                </InputRightElement>
+              </InputGroup>
+            </form>
+            {error && (
+              <Text fontSize="sm" color="red.600" _dark={{ color: 'red.300' }} bg="surface" rounded="md" px={3} py={1} mt={1} display="inline-block" shadow="card">
+                {error}
+              </Text>
+            )}
+            {results && results.length > 0 && (
+              <Box
+                position="absolute" top="56px" left={0} right={0} bg="surface" shadow="lift" rounded="xl"
+                borderWidth="1px" borderColor="line" overflow="hidden" zIndex={1200} role="listbox"
+              >
+                {results.map((r, i) => (
+                  <Box
+                    key={i} as="button" type="button" role="option" textAlign="start" width="full" px={4} py={3} fontSize="sm"
+                    _hover={{ bg: 'subtle' }} onClick={() => pick(r)} borderTopWidth={i ? '1px' : 0} borderColor="line"
+                  >
+                    {r.name}
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+          {floating && (
+            <>
+              <ColorModeToggle size="sm" bg="surface" shadow="card" flexShrink={0} pointerEvents="auto" />
+              <AccountMenu compact bg="surface" shadow="card" pointerEvents="auto" />
+            </>
           )}
-          {results && results.length > 0 && (
-            <Box
-              position="absolute" top="56px" left={0} right={0} bg="surface" shadow="lift" rounded="xl"
-              borderWidth="1px" borderColor="line" overflow="hidden" zIndex={1200} role="listbox"
-            >
-              {results.map((r, i) => (
-                <Box
-                  key={i} as="button" type="button" role="option" textAlign="start" width="full" px={4} py={3} fontSize="sm"
-                  _hover={{ bg: 'subtle' }} onClick={() => pick(r)} borderTopWidth={i ? '1px' : 0} borderColor="line"
-                >
-                  {r.name}
-                </Box>
-              ))}
-            </Box>
-          )}
-        </Box>
+        </Flex>
 
         <Flex gap={2} align="center" pointerEvents="auto" flex={{ lg: 1 }} overflow="hidden">
           <Box flex={1} minW={0}>{chips}</Box>
@@ -115,9 +124,9 @@ export default function Header({ type, setType, onPick, onLocate, locating, floa
                 Use my location
               </Button>
               <ColorModeToggle size="sm" />
+              <AccountMenu />
             </>
           )}
-          {floating && <ColorModeToggle size="sm" bg="surface" shadow="card" flexShrink={0} />}
         </Flex>
       </Flex>
     </Box>

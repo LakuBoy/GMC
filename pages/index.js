@@ -7,6 +7,8 @@ import BottomSheet from '../components/BottomSheet';
 import Header from '../components/Header';
 import List from '../components/List';
 import PlaceView from '../components/PlaceView';
+import { LOCAL_FACTS } from '../lib/community';
+import { useSummaries } from '../lib/community-client';
 import { useCurrency, useNow, useRates } from '../lib/hooks';
 import { openStatus } from '../lib/hours';
 import { parseCharge } from '../lib/money';
@@ -116,14 +118,23 @@ export default function Home() {
       .sort((a, b) => a.km - b.km);
   }, [places, bounds, view.center]);
 
-  // Add the open-now status and any price OSM knows, then apply the filter chips.
-  const decorated = useMemo(() => sorted.map((p) => ({
-    ...p, status: openStatus(p.hours, now), price: parseCharge(p.charge),
-  })), [sorted, now]);
+  // Ratings, confirmations and facts that visitors added.
+  const [communityVersion, setCommunityVersion] = useState(0);
+  const communityChanged = useCallback(() => setCommunityVersion((v) => v + 1), []);
+  const summaries = useSummaries(sorted, communityVersion);
+
+  // Add the open-now status, any price OSM knows and our own data, then apply the filter chips.
+  const decorated = useMemo(() => sorted.map((p) => {
+    const summary = summaries[p.id];
+    // Wi-Fi counts when either the map or visitors say so.
+    const features = summary?.facts.includes('wifi') ? { ...p.features, wifi: true } : p.features;
+    return { ...p, features, summary, status: openStatus(p.hours, now), price: parseCharge(p.charge) };
+  }), [sorted, now, summaries]);
 
   const visible = useMemo(() => decorated.filter((p) => (
     (!filters.open || p.status.state === 'open')
     && ['wifi', 'wheelchair', 'takeaway', 'outdoor', 'cards'].every((k) => !filters[k] || p.features?.[k])
+    && LOCAL_FACTS.every((f) => !f.chip || !filters[f.id] || p.summary?.facts.includes(f.id))
   )), [decorated, filters]);
 
   const goTo = useCallback((target) => {
@@ -138,7 +149,10 @@ export default function Home() {
 
   const panel = selected ? (
     <Box flex={1} minH={0} overflowY="auto">
-      <PlaceView place={selected} onBack={() => setSelected(null)} currency={currency} rates={rates} />
+      <PlaceView
+        place={selected} onBack={() => setSelected(null)} currency={currency} rates={rates}
+        onCommunityChange={communityChanged}
+      />
     </Box>
   ) : (
     <List

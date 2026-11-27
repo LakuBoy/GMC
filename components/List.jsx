@@ -1,6 +1,7 @@
 import { Alert, AlertDescription, AlertIcon, Box, Button, CloseButton, Flex, Select, Skeleton, SkeletonText, Text } from '@chakra-ui/react';
 import { useEffect, useRef } from 'react';
 import EmptyState from './EmptyState';
+import { LOCAL_FACTS } from '../lib/community';
 import { FEATURES, RatesCredit } from './badges';
 import PlaceCard from './PlaceCard';
 
@@ -50,7 +51,11 @@ export default function List({
       </Flex>
 
       <Flex gap={2} px={3} pb={2} overflowX="auto" sx={{ scrollbarWidth: 'none' }} role="group" aria-label="Filters">
-        {[{ id: 'open', label: 'Open now' }, ...FEATURES.filter((f) => !f.only || f.only.includes(type))].map((f) => {
+        {[
+          { id: 'open', label: 'Open now' },
+          ...FEATURES.filter((f) => !f.only || f.only.includes(type)),
+          ...LOCAL_FACTS.filter((f) => f.chip).map((f) => ({ id: f.id, label: f.chip })),
+        ].map((f) => {
           const on = !!filters[f.id];
           return (
             <Button
@@ -87,7 +92,7 @@ export default function List({
         )}
         {showEmpty && !status.error && !tooLarge && filtered && total > 0 && (
           <EmptyState kind="empty" title="No place matches these filters" action={{ label: 'Clear filters', onClick: clearFilters }}>
-            Places without opening hours or details in OpenStreetMap are hidden when a filter is on.
+            Places without that detail from OpenStreetMap or from visitors are hidden when a filter is on.
           </EmptyState>
         )}
         {showEmpty && !status.error && !(filtered && total > 0) && (

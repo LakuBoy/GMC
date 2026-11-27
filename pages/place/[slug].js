@@ -4,6 +4,7 @@ import Head from 'next/head';
 import NextLink from 'next/link';
 import { BiArrowBack } from 'react-icons/bi';
 import { useColorMode } from '@chakra-ui/react';
+import AccountMenu from '../../components/AccountMenu';
 import ColorModeToggle from '../../components/ColorModeToggle';
 import EmptyState from '../../components/EmptyState';
 import { Logo } from '../../components/icons';
@@ -55,7 +56,10 @@ export default function PlacePage({ place }) {
           <Button as={NextLink} href="/" leftIcon={<BiArrowBack />} variant="ghost" size="sm">
             <Flex align="center" gap={2}><Logo size={20} /><Text fontWeight={800}>Places nearby</Text></Flex>
           </Button>
-          <ColorModeToggle size="sm" />
+          <Flex gap={2} align="center">
+            <ColorModeToggle size="sm" />
+            <AccountMenu />
+          </Flex>
         </Flex>
 
         {place ? (

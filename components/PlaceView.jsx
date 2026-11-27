@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import { openStatus } from '../lib/hours';
 import { parseCharge } from '../lib/money';
 import { FEATURES, OpenBadge, Price, RatesCredit } from './badges';
+import CommunitySection from './community';
+import { SaveButton } from './Favorites';
 import { CategoryIcon, metaOf } from './icons';
 
 export const slugOf = (id) => id.replace('/', '-');
@@ -30,7 +32,7 @@ function Row({ icon: Icon, label, children, action }) {
   );
 }
 
-export default function PlaceView({ place, onBack, standalone, currency = 'both', rates }) {
+export default function PlaceView({ place, onBack, standalone, currency = 'both', rates, onCommunityChange }) {
   const toast = useToast();
   // Computed after mount so the server-rendered page and the browser never disagree about "now".
   const [status, setStatus] = useState(null);
@@ -79,7 +81,7 @@ export default function PlaceView({ place, onBack, standalone, currency = 'both'
         )}
         <Flex gap={3} align="flex-start">
           <Box rounded="14px" bg="whiteAlpha.300" p={3} flexShrink={0}><CategoryIcon category={place.category} size={30} /></Box>
-          <Box minW={0}>
+          <Box minW={0} flex={1}>
             <Text as="h1" fontSize="xl" fontWeight={800} lineHeight="short" letterSpacing="-0.01em">{place.name}</Text>
             <Flex gap={1.5} mt={2} wrap="wrap" align="center">
               <Badge bg="whiteAlpha.300" color="white" textTransform="capitalize">{place.kind}</Badge>
@@ -87,6 +89,7 @@ export default function PlaceView({ place, onBack, standalone, currency = 'both'
               {place.stars && <Badge bg="whiteAlpha.300" color="white">{place.stars} star</Badge>}
             </Flex>
           </Box>
+          <SaveButton place={place} color="white" bg="whiteAlpha.300" _hover={{ bg: 'whiteAlpha.500' }} />
         </Flex>
       </Box>
 
@@ -155,6 +158,8 @@ export default function PlaceView({ place, onBack, standalone, currency = 'both'
             OpenStreetMap has no more details for this place yet.
           </Text>
         )}
+
+        <CommunitySection place={place} onChanged={onCommunityChange} />
 
         {!standalone && (
           <Button

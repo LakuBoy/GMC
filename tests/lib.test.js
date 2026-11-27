@@ -29,6 +29,13 @@ describe('openStatus (Kampala time)', () => {
     // 21:30 UTC is already 00:30 Thursday in Kampala, so a Wednesday-only place is closed.
     expect(openStatus('We 08:00-23:00', at('2026-11-25T21:30:00Z')).state).toBe('closed');
   });
+  it('uses the weekly hours when the text mentions public holidays', () => {
+    const noon = at('2026-11-25T10:00:00Z'); // 13:00 EAT
+    for (const raw of ['PH,Mo-Su 08:00-19:00', 'Mo-Su,PH 08:00-19:00', 'Mo-Fr 08:00-19:00; Sa 08:00-15:00; PH off']) {
+      expect(openStatus(raw, noon).label).toBe('Open · closes 19:00');
+    }
+    expect(openStatus('PH off', noon).state).toBe('unknown');
+  });
   it('stays unknown for missing or invalid text', () => {
     expect(openStatus(null).state).toBe('unknown');
     expect(openStatus('by appointment maybe').state).toBe('unknown');

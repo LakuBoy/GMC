@@ -1,15 +1,31 @@
 # Places nearby
 
 Find restaurants, hotels and attractions on a map. Built with Next.js (pages router), Chakra UI and
-Leaflet. All data comes from OpenStreetMap: no Google Maps and no paid API keys.
+Leaflet. Place data comes from OpenStreetMap; ratings, reviews and local facts come from our own
+visitors. No Google Maps.
 
 ## Run
 
 ```bash
 npm install
-cp .env.example .env.local     # set OSM_CONTACT to your email or URL
-npm run dev                    # http://localhost:3000
+cp .env.example .env.local     # set OSM_CONTACT, and the account settings if you want sign-in
+npm run db:migrate             # creates the tables (safe to run again)
+npm run dev -- -p 3100         # http://localhost:3100
 ```
+
+## Accounts and visitor data
+
+- Sign-in uses NextAuth 4 with database sessions in Neon Postgres. In development, email sign-in prints
+  the link in the server log. Production has no email sign-in until a sending service is added, so only
+  Google works there.
+- Signed-in visitors can save places, write one review per place, report reviews, answer "is it still
+  there?" and vote on local facts. Guests can read everything.
+- A review is hidden after 3 people report it. There is no admin screen for reviewing reports yet.
+- Reviews show a chosen name or "First L.", never the email address.
+- `/account` has saved places, the display name and account deletion (which removes all their data).
+- API routes share one wrapper (`lib/server/api.js`): same-origin check, sign-in, Zod validation and
+  per-user rate limits. Rules shared with the browser are in `lib/community.js`.
+- Place ids are checked for format only, not for whether the place exists in OpenStreetMap.
 
 Needs Node 20.9 or newer. `npm run build` then `npm start` for production.
 

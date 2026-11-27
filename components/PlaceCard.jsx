@@ -1,10 +1,13 @@
 import { Badge, Box, Flex, Text } from '@chakra-ui/react';
 import { IoLocation } from 'react-icons/io5';
 import { FeatureIcons, OpenBadge, Price } from './badges';
+import { ConfirmedLine, Stars } from './community';
+import { SaveButton } from './Favorites';
 import { CategoryTile } from './icons';
 
-// Compact list card: what people scan. (Our own ratings and photos arrive in Phase C.)
+// Compact list card: what people scan. (Photos arrive later.)
 export default function PlaceCard({ place, selected, onSelect, currency, rates }) {
+  const { summary } = place;
   const km = place.km < 1 ? `${Math.round(place.km * 1000)} m` : `${place.km.toFixed(1)} km`;
   return (
     <Box
@@ -19,8 +22,18 @@ export default function PlaceCard({ place, selected, onSelect, currency, rates }
         <Box flex={1} minW={0}>
           <Flex justify="space-between" gap={2} align="flex-start">
             <Text fontWeight={700} fontSize="md" lineHeight="short" noOfLines={2}>{place.name}</Text>
-            <Text fontSize="xs" color="muted" fontWeight={600} whiteSpace="nowrap" mt="2px">{km}</Text>
+            <Flex align="center" gap={1} flexShrink={0}>
+              <Text fontSize="xs" color="muted" fontWeight={600} whiteSpace="nowrap">{km}</Text>
+              <SaveButton place={place} color="primary" mt="-6px" me="-6px" />
+            </Flex>
           </Flex>
+          {summary?.count > 0 && (
+            <Flex align="center" gap={1.5} fontSize="sm">
+              <Text fontWeight={800}>{summary.rating.toFixed(1)}</Text>
+              <Stars value={summary.rating} />
+              <Text color="muted">({summary.count})</Text>
+            </Flex>
+          )}
           <Flex gap={1.5} mt={1} wrap="wrap">
             <Badge colorScheme="brand" textTransform="capitalize">{place.kind}</Badge>
             {place.cuisine && <Badge colorScheme="orange" textTransform="capitalize">{place.cuisine}</Badge>}
@@ -36,6 +49,7 @@ export default function PlaceCard({ place, selected, onSelect, currency, rates }
             <OpenBadge status={place.status} />
             <FeatureIcons features={place.features} />
           </Flex>
+          <Box mt={1}><ConfirmedLine summary={summary} /></Box>
           {place.price && <Box mt={1}><Price price={place.price} currency={currency} rates={rates} /></Box>}
         </Box>
       </Flex>
